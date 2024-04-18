@@ -5,7 +5,7 @@ use crate::elf::{Elf32Ehdr, Elf32Shdr};
 
 fn main() {
     if env::args().len() != 2 {
-        eprintln!("Usage: readelf <file>");
+        eprintln!("Usage: {} <file>", env::args().nth(0).unwrap().split('/').last().unwrap());
         std::process::exit(1);
     }
     let filepath = env::args().nth(1).unwrap();
