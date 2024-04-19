@@ -1,5 +1,0 @@
-#![allow(dead_code)]
-pub const binary_prefix_name_size: usize = 10;
-pub const binary_prefix_name_start: [u8; 10] = [
-    0x7f, 0x45, 0x4c, 0x46, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00
-];
