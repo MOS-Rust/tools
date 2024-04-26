@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use regex::Regex;
 
 // TODO: Improve the regex pattern
-const PATTERN: &str = "const_export_[a-zA-Z0-9]+!\\(\\s{0,}([a-zA-Z_][a-zA-Z0-9_]+)\\s{0,},\\s{0,}\"?([a-zA-Z0-9\\$]+)\\s{0,}\"?\\);";
+const PATTERN: &str = "const_export_[a-zA-Z0-9]+!\\(\\s{0,}([a-zA-Z_][a-zA-Z0-9_]+)\\s{0,},\\s{0,}\"?([a-zA-Z0-9\\$]+(:?\\s?,\\s?[0-9]+)?)\\s{0,}\"?\\);";
 
 /// Find all `const_export_*` macros and return a map
 pub fn get_const_export_map(lines: &Vec<String>) -> HashMap<String, String> {
