@@ -1,0 +1,4 @@
+Cargo.lock
+rootfs/
+target/
+*.img
