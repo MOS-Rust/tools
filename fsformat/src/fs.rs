@@ -2,7 +2,6 @@ pub const BLOCK_SIZE: u32 = 0x1000;
 pub const BLOCK_SIZE_BIT: u32 = 0x8000;
 
 pub const MAX_NAME_LEN: u32 = 0x80;
-pub const MAX_PATH_LEN: u32 = 0x400;
 
 pub const DIRECT_PTR_CNT: u32 = 10;
 pub const INDIRECT_PTR_CNT: u32 = BLOCK_SIZE / 4;
@@ -10,8 +9,6 @@ pub const INDIRECT_PTR_CNT: u32 = BLOCK_SIZE / 4;
 pub const MAX_FILE_SIZE: u32 = (INDIRECT_PTR_CNT) * BLOCK_SIZE;
 
 pub const FILE_STRUCT_SIZE: u32 = 0x100;
-
-pub const FILE_BLOCK_CNT: u32 = BLOCK_SIZE / FILE_STRUCT_SIZE;
 
 pub const FS_MAGIC: u32 = 0x68286097;
 
@@ -103,10 +100,6 @@ impl File {
         self.f_size
     }
 
-    pub fn get_type(&self) -> FileType {
-        self.f_type
-    }
-
     pub fn get_direct(&self, idx: u32) -> u32 {
         assert!(idx < DIRECT_PTR_CNT);
         self.f_direct[idx as usize]
@@ -171,5 +164,13 @@ impl Block {
     pub fn as_file_index(&self, n: u32) -> &mut File {
         assert!(self.b_type == BlockType::File);
         unsafe {&mut *(self.b_data.as_ptr() as *mut File).add(n as usize)}
+    }
+
+    pub fn write_u32(&mut self, n: u32, value: u32) {
+        assert!(n % 4 == 0);
+        let value = value.to_le_bytes();
+        for i in 0..4 {
+            self.b_data[n as usize * 4 + i] = value[i];
+        }
     }
 }

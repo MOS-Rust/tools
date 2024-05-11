@@ -1,6 +1,6 @@
 use std::{io::Write, mem::size_of};
 
-use crate::fs::{Block, BlockType, File, FileType, SuperBlock, BLOCK_SIZE, BLOCK_SIZE_BIT, DIRECT_PTR_CNT, FS_MAGIC, INDIRECT_PTR_CNT, MAX_NAME_LEN};
+use crate::fs::{Block, BlockType, File, FileType, SuperBlock, BLOCK_SIZE, BLOCK_SIZE_BIT, DIRECT_PTR_CNT, FS_MAGIC, INDIRECT_PTR_CNT, MAX_FILE_SIZE, MAX_NAME_LEN};
 
 const BLOCK_COUNT: u32 = 0x400;
 static mut DISK : Disk = Disk::new();
@@ -87,6 +87,9 @@ impl Disk {
         if file_name.len() >= MAX_NAME_LEN as usize {
             panic!("File name too long");
         }
+        if file.len() >= MAX_FILE_SIZE as usize {
+            panic!("File too large");
+        }
         target.set_name(file_name);
         target.set_type(FileType::File);
         target.set_size(file.len() as u32);
@@ -117,10 +120,7 @@ fn save_block_link(dir: &mut File, block_cnt: u32, block_number: u32) {
             let new_block = next_block(BlockType::Index);
             dir.set_indirect(new_block as u32);
         }
-        let value: [u8; 4] = block_number.to_le_bytes();
-        for i in 0..4 {
-            disk_mut().blocks[dir.get_indirect() as usize].b_data[block_cnt as usize * 4 + i] = value[i];
-        }
+        disk_mut().blocks[dir.get_indirect() as usize].write_u32(block_cnt, block_number);
     }
 }
 
@@ -150,12 +150,6 @@ fn create_file(dir: &mut File) -> &'static mut File {
 }
 
 pub fn flush_bitmap() {
-    // int i;
-	// // update bitmap, mark all bit where corresponding block is used.
-	// for (i = 0; i < nextbno; ++i) {
-	// 	((uint32_t *)disk[2 + i / BLOCK_SIZE_BIT].data)[(i % BLOCK_SIZE_BIT) / 32] &=
-	// 	    ~(1 << (i % 32));
-	// }
     for i in 0..disk().next_block {
         let block_number = i / BLOCK_SIZE_BIT;
         let bit_number = i % BLOCK_SIZE_BIT;
