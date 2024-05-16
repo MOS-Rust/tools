@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 pub type Elf32Half = u16;
 
 pub type Elf32Word = u32;
