@@ -1,9 +1,12 @@
-use std::{io::Write, mem::size_of};
+use std::{io::Write, mem::size_of, ptr::{addr_of, addr_of_mut}};
 
-use crate::fs::{Block, BlockType, File, FileType, SuperBlock, BLOCK_SIZE, BLOCK_SIZE_BIT, DIRECT_PTR_CNT, FS_MAGIC, INDIRECT_PTR_CNT, MAX_FILE_SIZE, MAX_NAME_LEN};
+use crate::fs::{
+    Block, BlockType, File, FileType, SuperBlock, BLOCK_SIZE, BLOCK_SIZE_BIT, DIRECT_PTR_CNT,
+    FS_MAGIC, INDIRECT_PTR_CNT, MAX_FILE_SIZE, MAX_NAME_LEN,
+};
 
 const BLOCK_COUNT: u32 = 0x400;
-static mut DISK : Disk = Disk::new();
+static mut DISK: Disk = Disk::new();
 
 pub struct Disk {
     pub super_block: SuperBlock,
@@ -24,11 +27,17 @@ impl Disk {
 }
 
 fn disk() -> &'static Disk {
-    unsafe { &DISK }
+    unsafe {
+        let p = addr_of!(DISK);
+        &*p
+    }
 }
 
 pub fn disk_mut() -> &'static mut Disk {
-    unsafe { &mut DISK }
+    unsafe { 
+        let p = addr_of_mut!(DISK);
+        &mut *p
+    }
 }
 
 pub fn init_disk() {
@@ -50,7 +59,7 @@ pub fn init_disk() {
     }
 
     disk_mut().blocks[1].set_type(BlockType::Super);
-    disk_mut().super_block = SuperBlock::new(FS_MAGIC, BLOCK_COUNT as u32);
+    disk_mut().super_block = SuperBlock::new(FS_MAGIC, BLOCK_COUNT);
     let root = &mut disk_mut().super_block.s_root;
     root.set_name("/");
     root.set_type(FileType::Directory);
@@ -114,11 +123,11 @@ fn save_block_link(dir: &mut File, block_cnt: u32, block_number: u32) {
     assert!(block_cnt < INDIRECT_PTR_CNT);
 
     if block_cnt < DIRECT_PTR_CNT {
-        dir.set_direct(block_cnt, block_number as u32);
+        dir.set_direct(block_cnt, block_number);
     } else {
         if dir.get_indirect() == 0 {
             let new_block = next_block(BlockType::Index);
-            dir.set_indirect(new_block as u32);
+            dir.set_indirect(new_block);
         }
         disk_mut().blocks[dir.get_indirect() as usize].write_u32(block_cnt, block_number);
     }
@@ -127,7 +136,7 @@ fn save_block_link(dir: &mut File, block_cnt: u32, block_number: u32) {
 fn make_link_block(dir: &mut File, block_cnt: u32) -> u32 {
     let block_number = next_block(BlockType::File);
     save_block_link(dir, block_cnt, block_number);
-    dir.set_size(dir.get_size() + BLOCK_SIZE as u32);
+    dir.set_size(dir.get_size() + BLOCK_SIZE);
     block_number
 }
 
@@ -156,14 +165,17 @@ pub fn flush_bitmap() {
         let bit_block = &mut disk_mut().blocks[2 + block_number as usize];
         let value = !(1 << (bit_number % 32));
         let bytes: &[u8; 4] = unsafe { std::mem::transmute(&value) };
-        for j in 0..4 {
-            bit_block.b_data[(bit_number / 32) as usize * 4 + j] &= bytes[j];
-        }
+        (0..4).for_each(|j| bit_block.b_data[(bit_number / 32) as usize * 4 + j] &= bytes[j]);
     }
 }
 
 pub fn finish_fs(name: &str) {
-    disk().super_block.to_bytes().into_iter().enumerate().for_each(|(i, &b)| disk_mut().blocks[1].b_data[i] = b);
+    disk()
+        .super_block
+        .to_bytes()
+        .iter()
+        .enumerate()
+        .for_each(|(i, &b)| disk_mut().blocks[1].b_data[i] = b);
     let mut file = std::fs::File::create(name).unwrap();
     for i in 0..1024 {
         file.write_all(&disk().blocks[i].b_data).unwrap();

@@ -5,7 +5,7 @@ use crate::elf::{Elf32Ehdr, Elf32Shdr};
 
 fn main() {
     if env::args().len() != 2 {
-        eprintln!("Usage: {} <file>", env::args().nth(0).unwrap().split('/').last().unwrap());
+        eprintln!("Usage: {} <file>", env::args().next().unwrap().split('/').last().unwrap());
         std::process::exit(1);
     }
     let filepath = env::args().nth(1).unwrap();
@@ -14,9 +14,9 @@ fn main() {
 }
 
 fn read_as_bytes(filepath: &str) -> Vec<u8> {
-    let len = std::fs::metadata(&filepath).unwrap().len() as usize;
+    let len = std::fs::metadata(filepath).unwrap().len() as usize;
     let mut data = vec![0; len];
-    let mut f = File::open(&filepath).unwrap();
+    let mut f = File::open(filepath).unwrap();
     f.read_exact(&mut data).unwrap();
     data
 }

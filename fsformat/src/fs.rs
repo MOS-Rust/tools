@@ -140,7 +140,6 @@ impl SuperBlock {
     }
 }
 
-
 impl Block {
     pub const fn new() -> Block {
         Block {
@@ -161,16 +160,15 @@ impl Block {
         }
     }
 
+    #[allow(clippy::mut_from_ref)]
     pub fn as_file_index(&self, n: u32) -> &mut File {
         assert!(self.b_type == BlockType::File);
-        unsafe {&mut *(self.b_data.as_ptr() as *mut File).add(n as usize)}
+        unsafe { &mut *(self.b_data.as_ptr() as *mut File).add(n as usize) }
     }
 
     pub fn write_u32(&mut self, n: u32, value: u32) {
         assert!(n % 4 == 0);
         let value = value.to_le_bytes();
-        for i in 0..4 {
-            self.b_data[n as usize * 4 + i] = value[i];
-        }
+        (0..4).for_each(|i| self.b_data[n as usize * 4 + i] = value[i]);
     }
 }

@@ -27,21 +27,21 @@ fn main() {
                 return;
             }
             "-f" => {
-                if args.len() == 0 || input.len() != 0 {
+                if args.len() == 0 || !input.is_empty() {
                     display_help();
                     return;
                 }
                 input = args.next().unwrap();
             }
             "-o" => {
-                if args.len() == 0 || output.len() != 0 {
+                if args.len() == 0 || !output.is_empty() {
                     display_help();
                     return;
                 }
                 output = args.next().unwrap();
             }
             "-p" => {
-                if args.len() == 0 || prefix.len() != 0 {
+                if args.len() == 0 || !prefix.is_empty() {
                     display_help();
                     return;
                 }
@@ -53,7 +53,7 @@ fn main() {
             }
         }
     }
-    if input.len() == 0 || output.len() == 0 {
+    if input.is_empty() || output.is_empty() {
         display_help();
         return;
     }
@@ -73,8 +73,7 @@ fn main() {
     match write(&output, &bin, &input, &prefix) {
         Ok(_) => (),
         Err(e) => {
-            eprintln!("Error: {}", e);
-            return;
+            eprintln!("Error: {}", e)
         }
     }
 }
@@ -88,13 +87,13 @@ fn write(file: &str, data: &[u8], input: &str, prefix: &str) -> Result<(), std::
     let size_msg = format!(
         "pub const binary_{}_{}_size: usize = {};\n",
         prefix,
-        input.split("/").last().unwrap(),
+        input.split('/').last().unwrap(),
         data.len()
     );
     let start_msg = format!(
         "pub const binary_{}_{}_start: [u8; {}] = [\n",
         prefix,
-        input.split("/").last().unwrap(),
+        input.split('/').last().unwrap(),
         data.len()
     );
     let end_msg = "];\n";
@@ -102,12 +101,12 @@ fn write(file: &str, data: &[u8], input: &str, prefix: &str) -> Result<(), std::
     out.write_all(dead_code_msg.as_bytes())?;
     out.write_all(size_msg.as_bytes())?;
     out.write_all(start_msg.as_bytes())?;
-    for i in 0..data.len() {
-        out.write_all(format!("0x{:02x}, ", data[i]).as_bytes())?;
+    (0..data.len()).for_each(|i| {
+        out.write_all(format!("0x{:02x}, ", data[i]).as_bytes()).unwrap();
         if i % FRAME_MAX_SIZE == FRAME_MAX_SIZE - 1 {
-            out.write_all(b"\n")?;
+            out.write_all(b"\n").unwrap();
         }
-    }
+    });
     out.write_all(end_msg.as_bytes())?;
     Ok(())
 }
